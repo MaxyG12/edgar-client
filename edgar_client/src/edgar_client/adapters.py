@@ -35,6 +35,7 @@ platforms.  See _send_once() for the exact try/except ordering.
 
 from __future__ import annotations
 
+import gzip
 import socket
 import ssl
 import time
@@ -366,6 +367,11 @@ def _build_response(
     # http.client.HTTPResponse.headers is email.message.Message; dict() gives
     # us a plain {str: str} mapping with the last value for duplicate keys.
     raw_headers: dict[str, str] = dict(http_resp.headers)
+
+    # urllib does NOT auto-decompress when Accept-Encoding is set explicitly.
+    content_encoding = raw_headers.get("Content-Encoding", "") or raw_headers.get("content-encoding", "")
+    if "gzip" in content_encoding:
+        body = gzip.decompress(body)
 
     # Detect encoding from Content-Type header.
     content_type = raw_headers.get("Content-Type", "") or raw_headers.get("content-type", "")
